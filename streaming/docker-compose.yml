@@ -1,0 +1,109 @@
+ # streaming/docker-compose.yml
+version: '3.8'
+
+services:
+  # Kafka Producers
+  user-activity-producer:
+    build: ./producers
+    container_name: streaming-user-activity-producer
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      EVENTS_PER_MINUTE: 1000
+      DURATION_MINUTES: 0  # Run indefinitely
+    volumes:
+      - ./producers:/app
+      - ../logs:/app/logs
+    networks:
+      - streaming-network
+      - ecommerce-network
+    command: ["python", "user_activity_producer.py"]
+    restart: unless-stopped
+
+  marketplace-sales-producer:
+    build: ./producers
+    container_name: streaming-marketplace-sales-producer
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SALES_PER_HOUR: 100
+      DURATION_MINUTES: 0  # Run indefinitely
+    volumes:
+      - ./producers:/app
+      - ../logs:/app/logs
+    networks:
+      - streaming-network
+      - ecommerce-network
+    command: ["python", "marketplace_sales_producer.py"]
+    restart: unless-stopped
+
+  # Stream Consumers
+  streaming-consumer:
+    build: ./consumers
+    container_name: streaming-consumer
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      CONSUMER_TOPICS: user_activity_events,marketplace_sales
+      MONITORING_INTERVAL: 60
+    volumes:
+      - ./consumers:/app
+      - ../logs:/app/logs
+    networks:
+      - streaming-network
+      - ecommerce-network
+    command: ["python", "streaming_consumer.py"]
+    restart: unless-stopped
+
+  # Kafka Topic Setup
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: streaming-kafka-setup
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - streaming-network
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo 'Waiting for Kafka to be ready...'
+        sleep 30
+        
+        echo 'Creating topics...'
+        kafka-topics --create --topic user_activity_events --bootstrap-server kafka:29092 --partitions 6 --replication-factor 1 --if-not-exists
+        kafka-topics --create --topic marketplace_sales --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --if-not-exists
+        
+        echo 'Topics created successfully:'
+        kafka-topics --list --bootstrap-server kafka:29092
+        
+        echo 'Topic configurations:'
+        kafka-topics --describe --topic user_activity_events --bootstrap-server kafka:29092
+        kafka-topics --describe --topic marketplace_sales --bootstrap-server kafka:29092
+      "
+
+  # Kafka Manager (Optional UI)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: streaming-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - streaming-network
+      - ecommerce-network
+
+networks:
+  streaming-network:
+    driver: bridge
+  ecommerce-network:
+    external: true
