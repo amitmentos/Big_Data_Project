@@ -1,0 +1,161 @@
+# orchestration/dags/bronze_to_silver_dag.py
+
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+
+default_args = {
+    'owner': 'data-engineering-team',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 1, 1),
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+}
+
+# Common Spark configuration with improved connection settings
+spark_config = {
+    'spark.master': 'local[2]',  # Use local mode to bypass cluster issues
+    'spark.submit.deployMode': 'client',  # Added deploy mode in config instead of parameter
+    'spark.sql.adaptive.enabled': 'true',
+    'spark.sql.adaptive.coalescePartitions.enabled': 'true',
+    # Removed Kryo serializer due to compatibility issues with Iceberg
+    # 'spark.serializer': 'org.apache.spark.serializer.KryoSerializer',
+    'spark.sql.extensions': 'org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions',
+    'spark.sql.catalog.spark_catalog': 'org.apache.iceberg.spark.SparkSessionCatalog',
+    'spark.sql.catalog.spark_catalog.type': 'hadoop',
+    'spark.sql.catalog.spark_catalog.warehouse': 's3a://warehouse/',
+    'spark.sql.catalog.spark_catalog.s3.endpoint': 'http://minio:9000',
+    'spark.hadoop.fs.s3a.access.key': 'minio',
+    'spark.hadoop.fs.s3a.secret.key': 'minio123',
+    'spark.hadoop.fs.s3a.impl': 'org.apache.hadoop.fs.s3a.S3AFileSystem',
+    'spark.hadoop.fs.s3a.path.style.access': 'true',
+    'spark.hadoop.fs.s3a.connection.ssl.enabled': 'false',
+    # Improved connection and retry settings
+    'spark.hadoop.fs.s3a.connection.establish.timeout': '15000',
+    'spark.hadoop.fs.s3a.connection.timeout': '30000',
+    'spark.hadoop.fs.s3a.socket.timeout': '60000',
+    'spark.hadoop.fs.s3a.attempts.maximum': '10',
+    'spark.hadoop.fs.s3a.retry.limit': '10',
+    'spark.hadoop.fs.s3a.retry.interval': '2000',
+    'spark.hadoop.fs.s3a.max.connections': '100',
+    'spark.hadoop.fs.s3a.fast.upload': 'true',
+    # Memory and executor settings
+    'spark.executor.memory': '2g',
+    'spark.driver.memory': '2g',
+    'spark.memory.offHeap.enabled': 'true',
+    'spark.memory.offHeap.size': '1g',
+    # Performance tuning
+    'spark.default.parallelism': '20',
+    'spark.sql.shuffle.partitions': '20',
+    'spark.sql.files.maxPartitionBytes': '134217728'
+}
+
+dag = DAG(
+    'bronze_to_silver_etl',
+    default_args=default_args,
+    description='ETL pipeline from Bronze to Silver layer with data quality checks',
+    schedule_interval=timedelta(hours=1),  # Run every hour
+    catchup=False,
+    max_active_runs=1,
+    tags=['etl', 'bronze', 'silver', 'ecommerce']
+)
+
+# Data Quality Check for Bronze Layer
+bronze_quality_check = SparkSubmitOperator(
+    task_id='bronze_quality_check',
+    application='/opt/processing/spark-apps/data_quality_checks.py',
+    conn_id='spark_default',
+    application_args=['--layer', 'bronze', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Transform User Events
+transform_user_events = SparkSubmitOperator(
+    task_id='transform_user_events',
+    application='/opt/processing/spark-apps/silver_transformations.py',
+    conn_id='spark_default',
+    application_args=['--source', 'user_events', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Transform Sales Data
+transform_sales_data = SparkSubmitOperator(
+    task_id='transform_sales_data',
+    application='/opt/processing/spark-apps/silver_transformations.py',
+    conn_id='spark_default',
+    application_args=['--source', 'sales', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Process Customer SCD Type 2
+process_customer_scd = SparkSubmitOperator(
+    task_id='process_customer_scd',
+    application='/opt/processing/spark-apps/scd_type2_processor.py',
+    conn_id='spark_default',
+    application_args=['--source', 'customer', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Transform Product Catalog
+transform_product_catalog = SparkSubmitOperator(
+    task_id='transform_product_catalog',
+    application='/opt/processing/spark-apps/silver_transformations.py',
+    conn_id='spark_default',
+    application_args=['--source', 'product_catalog', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Handle Late Arriving Data
+handle_late_arrivals = SparkSubmitOperator(
+    task_id='handle_late_arrivals',
+    application='/opt/processing/spark-apps/late_arrival_handler.py',
+    conn_id='spark_default',
+    application_args=['--lookback-hours', '48', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Silver Layer Quality Check
+silver_quality_check = SparkSubmitOperator(
+    task_id='silver_quality_check',
+    application='/opt/processing/spark-apps/data_quality_checks.py',
+    conn_id='spark_default',
+    application_args=['--layer', 'silver', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Define task dependencies
+bronze_quality_check >> [transform_user_events, transform_sales_data, process_customer_scd, transform_product_catalog]
+[transform_user_events, transform_sales_data, process_customer_scd, transform_product_catalog] >> handle_late_arrivals
+handle_late_arrivals >> silver_quality_check
