@@ -1,0 +1,45 @@
+# processing/requirements.txt
+
+# Spark and Big Data
+pyspark==3.4.1
+delta-spark==2.4.0
+pyiceberg==0.4.0
+
+# Data processing
+pandas==2.0.3
+numpy==1.24.3
+pyarrow==12.0.1
+
+# AWS/S3 integration - Fixed versions with compatible dependencies
+boto3==1.24.59
+botocore==1.27.59
+aiobotocore==2.4.2
+s3fs==2022.11.0
+fsspec==2022.11.0
+
+# Data quality
+great-expectations==0.17.12
+
+# Kafka integration
+kafka-python==2.0.2
+confluent-kafka==2.2.0
+
+# Database connectivity
+psycopg2-binary==2.9.7
+sqlalchemy==2.0.19
+
+# Utilities
+requests==2.31.0
+python-dateutil==2.8.2
+pyyaml==6.0.1
+
+# Logging and monitoring
+structlog==23.1.0
+
+# Development and testing
+pytest==7.4.0
+pytest-spark==0.6.0
+
+# For MinIO compatibility
+minio==7.1.15
+urllib3<2.0.0

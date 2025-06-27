@@ -1,0 +1,133 @@
+# Great Expectations Configuration for E-commerce Data Platform
+config_version: 3.0
+
+# Data sources configuration
+datasources:
+  bronze_datasource:
+    class_name: Datasource
+    execution_engine:
+      class_name: SparkDFExecutionEngine
+      spark_config:
+        spark.sql.execution.arrow.pyspark.enabled: "true"
+        spark.sql.adaptive.enabled: "true"
+        spark.sql.adaptive.coalescePartitions.enabled: "true"
+    data_connectors:
+      bronze_connector:
+        class_name: ConfiguredAssetDataConnector
+        base_directory: s3a://warehouse/bronze/
+        assets:
+          raw_customer_data:
+            pattern: raw_customer_data/data/last_updated_day=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - last_updated_day
+          raw_user_events:
+            pattern: raw_user_events/data/last_updated_day=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - last_updated_day
+          raw_marketplace_sales:
+            pattern: raw_marketplace_sales/data/last_updated_day=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - last_updated_day
+          raw_product_data:
+            pattern: raw_product_data/data/last_updated_day=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - last_updated_day
+
+  silver_datasource:
+    class_name: Datasource
+    execution_engine:
+      class_name: SparkDFExecutionEngine
+    data_connectors:
+      silver_connector:
+        class_name: ConfiguredAssetDataConnector
+        base_directory: s3a://warehouse/silver/
+        assets:
+          standardized_user_events:
+            pattern: standardized_user_events/data/ingestion_date=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - ingestion_date
+          standardized_sales:
+            pattern: standardized_sales/data/transaction_date=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - transaction_date
+          dim_customer_scd:
+            pattern: dim_customer_scd/data/.*\.parquet$
+          dim_product:
+            pattern: dim_product/data/.*\.parquet$
+
+  gold_datasource:
+    class_name: Datasource
+    execution_engine:
+      class_name: SparkDFExecutionEngine
+    data_connectors:
+      gold_connector:
+        class_name: ConfiguredAssetDataConnector
+        base_directory: s3a://warehouse/gold/
+        assets:
+          fact_sales:
+            pattern: fact_sales/data/sale_date=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - sale_date
+          customer_product_interactions:
+            pattern: customer_product_interactions/data/feature_date=(\d{4}-\d{2}-\d{2})/.*\.parquet$
+            group_names:
+              - feature_date
+
+# Stores configuration
+stores:
+  expectations_store:
+    class_name: ExpectationsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: processing/great_expectations/expectations/
+
+  validations_store:
+    class_name: ValidationsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: processing/great_expectations/uncommitted/validations/
+
+  evaluation_parameter_store:
+    class_name: EvaluationParameterStore
+
+  checkpoint_store:
+    class_name: CheckpointStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: processing/great_expectations/checkpoints/
+
+  profiler_store:
+    class_name: ProfilerStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: processing/great_expectations/profilers/
+
+# Data docs configuration
+data_docs_sites:
+  local_site:
+    class_name: SiteBuilder
+    show_how_to_buttons: true
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: processing/great_expectations/uncommitted/data_docs/local_site/
+    site_index_builder:
+      class_name: DefaultSiteIndexBuilder
+
+# Notebooks configuration
+notebooks:
+
+# Configuration variables
+config_variables_file_path: processing/great_expectations/uncommitted/config_variables.yml
+
+# Plugins directory
+plugins_directory: processing/great_expectations/plugins/
+
+# Other settings
+anonymous_usage_statistics:
+  enabled: false
+  data_context_id: ecommerce-platform-ge-context
+
+include_rendered_content:
+  globally: false
+  expectation_suite: false
+  expectation_validation_result: false 

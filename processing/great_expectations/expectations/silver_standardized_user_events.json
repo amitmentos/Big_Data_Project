@@ -1,0 +1,181 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "silver_standardized_user_events",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_columns_to_match_ordered_list",
+      "kwargs": {
+        "column_list": [
+          "event_id",
+          "customer_id",
+          "event_type", 
+          "product_id",
+          "session_id",
+          "event_time",
+          "event_hour",
+          "event_date",
+          "platform",
+          "device_type",
+          "location",
+          "page_url",
+          "referrer_url", 
+          "search_query",
+          "normalized_event_type",
+          "is_conversion_event",
+          "customer_journey_stage",
+          "ingestion_date",
+          "processing_timestamp"
+        ]
+      },
+      "meta": {
+        "description": "Ensure all standardized columns are present"
+      }
+    },
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 1,
+        "max_value": 1000000
+      },
+      "meta": {
+        "description": "Table should have reasonable row count"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "event_id"
+      },
+      "meta": {
+        "description": "Event ID should never be null after standardization"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "customer_id"
+      },
+      "meta": {
+        "description": "Customer ID should be populated in silver layer"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "event_time"
+      },
+      "meta": {
+        "description": "Event time should never be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "normalized_event_type"
+      },
+      "meta": {
+        "description": "Normalized event type should always be populated"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "event_id"
+      },
+      "meta": {
+        "description": "Event IDs should remain unique in silver layer"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "normalized_event_type",
+        "value_set": [
+          "engagement",
+          "navigation", 
+          "search",
+          "cart_action",
+          "conversion",
+          "authentication"
+        ]
+      },
+      "meta": {
+        "description": "Normalized event types should be standardized categories"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "is_conversion_event",
+        "value_set": [true, false]
+      },
+      "meta": {
+        "description": "Conversion flag should be boolean"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "customer_journey_stage",
+        "value_set": [
+          "awareness",
+          "consideration", 
+          "purchase",
+          "retention",
+          "advocacy"
+        ]
+      },
+      "meta": {
+        "description": "Customer journey stage should be one of defined stages"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "event_hour",
+        "min_value": 0,
+        "max_value": 23
+      },
+      "meta": {
+        "description": "Event hour should be between 0 and 23"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "event_date",
+        "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "meta": {
+        "description": "Event date should be in YYYY-MM-DD format"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "ingestion_date",
+        "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "meta": {
+        "description": "Ingestion date should be in YYYY-MM-DD format"
+      }
+    },
+    {
+      "expectation_type": "expect_column_pair_values_A_to_be_greater_than_B",
+      "kwargs": {
+        "column_A": "processing_timestamp",
+        "column_B": "event_time"
+      },
+      "meta": {
+        "description": "Processing timestamp should be after event time"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.17.12",
+    "expectation_suite_description": "Expectation suite for silver layer standardized user events",
+    "data_asset_name": "standardized_user_events",
+    "layer": "silver"
+  }
+} 
