@@ -1,0 +1,48 @@
+name: bronze_layer_checkpoint
+config_version: 1.0
+template_name:
+module_name: great_expectations.checkpoint
+class_name: Checkpoint
+run_name_template: "%Y%m%d-%H%M%S-bronze-validation"
+expectation_suite_name:
+batch_request: {}
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: store_evaluation_params
+    action:
+      class_name: StoreEvaluationParametersAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+      site_names: []
+evaluation_parameters: {}
+runtime_configuration: {}
+validations:
+  - batch_request:
+      datasource_name: bronze_datasource
+      data_connector_name: bronze_connector
+      data_asset_name: raw_user_events
+      batch_identifiers:
+        last_updated_day: "${process_date}"
+    expectation_suite_name: bronze_raw_user_events
+    action_list:
+      - name: store_validation_result
+        action:
+          class_name: StoreValidationResultAction
+      - name: update_data_docs
+        action:
+          class_name: UpdateDataDocsAction
+  - batch_request:
+      datasource_name: bronze_datasource
+      data_connector_name: bronze_connector  
+      data_asset_name: raw_marketplace_sales
+      batch_identifiers:
+        last_updated_day: "${process_date}"
+    expectation_suite_name: bronze_raw_marketplace_sales
+    action_list:
+      - name: store_validation_result
+        action:
+          class_name: StoreValidationResultAction
+profilers: [] 

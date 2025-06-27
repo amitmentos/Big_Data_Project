@@ -1,0 +1,243 @@
+{
+  "data_asset_type": null,
+  "expectation_suite_name": "gold_fact_sales",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_columns_to_match_ordered_list",
+      "kwargs": {
+        "column_list": [
+          "sale_id",
+          "transaction_id",
+          "customer_sk",
+          "product_id",
+          "sale_date",
+          "sale_time",
+          "quantity",
+          "unit_price",
+          "total_amount",
+          "discount_amount",
+          "net_amount",
+          "payment_method",
+          "currency",
+          "exchange_rate",
+          "sales_channel",
+          "promotion_code",
+          "revenue_recognition_date",
+          "cost_of_goods_sold",
+          "gross_profit",
+          "profit_margin"
+        ]
+      },
+      "meta": {
+        "description": "Ensure all fact table columns are present"
+      }
+    },
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 1,
+        "max_value": 10000000
+      },
+      "meta": {
+        "description": "Fact table should have reasonable row count"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "sale_id"
+      },
+      "meta": {
+        "description": "Sale ID is the primary key and cannot be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "customer_sk"
+      },
+      "meta": {
+        "description": "Customer surrogate key cannot be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "product_id"
+      },
+      "meta": {
+        "description": "Product ID cannot be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "total_amount"
+      },
+      "meta": {
+        "description": "Total amount cannot be null"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "sale_id"
+      },
+      "meta": {
+        "description": "Sale IDs should be unique"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "quantity",
+        "min_value": 1,
+        "max_value": 100
+      },
+      "meta": {
+        "description": "Quantity should be reasonable (1-100)"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "unit_price",
+        "min_value": 0.01,
+        "max_value": 10000.00
+      },
+      "meta": {
+        "description": "Unit price should be positive and reasonable"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "min_value": 0.01,
+        "max_value": 50000.00
+      },
+      "meta": {
+        "description": "Total amount should be positive and reasonable"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "discount_amount",
+        "min_value": 0.00,
+        "max_value": 5000.00
+      },
+      "meta": {
+        "description": "Discount should be non-negative and reasonable"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "exchange_rate",
+        "min_value": 0.1,
+        "max_value": 10.0
+      },
+      "meta": {
+        "description": "Exchange rate should be within reasonable range"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "profit_margin",
+        "min_value": -1.0,
+        "max_value": 1.0
+      },
+      "meta": {
+        "description": "Profit margin should be between -100% and 100%"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "payment_method",
+        "value_set": [
+          "credit_card",
+          "debit_card", 
+          "paypal",
+          "bank_transfer",
+          "cash",
+          "cryptocurrency",
+          "gift_card"
+        ]
+      },
+      "meta": {
+        "description": "Payment method should be from approved list"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "currency",
+        "value_set": ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"]
+      },
+      "meta": {
+        "description": "Currency should be supported currency codes"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "sales_channel",
+        "value_set": ["online", "in_store", "mobile_app", "phone", "catalog"]
+      },
+      "meta": {
+        "description": "Sales channel should be from defined channels"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "sale_id",
+        "regex": "^SALE-\\d{8}-[A-Z0-9]{6}$"
+      },
+      "meta": {
+        "description": "Sale ID should follow expected format"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "sale_date",
+        "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "meta": {
+        "description": "Sale date should be in YYYY-MM-DD format"
+      }
+    },
+    {
+      "expectation_type": "expect_column_pair_values_to_be_equal",
+      "kwargs": {
+        "column_A": "total_amount",
+        "column_B": "net_amount",
+        "ignore_row_if": "either_value_is_missing"
+      },
+      "meta": {
+        "description": "Total amount should equal net amount when no discount"
+      }
+    },
+    {
+      "expectation_type": "expect_column_pair_values_A_to_be_greater_than_or_equal_to_B",
+      "kwargs": {
+        "column_A": "total_amount",
+        "column_B": "discount_amount"
+      },
+      "meta": {
+        "description": "Total amount should be >= discount amount"
+      }
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.17.12",
+    "expectation_suite_description": "Expectation suite for gold layer fact sales table with business logic validation",
+    "data_asset_name": "fact_sales",
+    "layer": "gold"
+  }
+} 
