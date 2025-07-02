@@ -1,0 +1,102 @@
+[
+  {
+    "campaign_id": "CAMP_000",
+    "campaign_name": "Enterprise-wide maximized project Campaign",
+    "campaign_type": "Social Media",
+    "start_date": "2025-06-20",
+    "end_date": "2025-09-11",
+    "budget": 1187.06,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_001",
+    "campaign_name": "Balanced disintermediate parallelism Campaign",
+    "campaign_type": "Email",
+    "start_date": "2025-06-20",
+    "end_date": "2025-07-02",
+    "budget": 5817.38,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_002",
+    "campaign_name": "Sharable responsive help-desk Campaign",
+    "campaign_type": "Influencer",
+    "start_date": "2025-06-20",
+    "end_date": "2025-07-06",
+    "budget": 72981.09,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_003",
+    "campaign_name": "Object-based content-based protocol Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-20",
+    "end_date": "2025-06-27",
+    "budget": 39324.52,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_004",
+    "campaign_name": "Advanced systematic flexibility Campaign",
+    "campaign_type": "Social Media",
+    "start_date": "2025-06-20",
+    "end_date": "2025-07-06",
+    "budget": 78810.8,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_005",
+    "campaign_name": "Virtual real-time challenge Campaign",
+    "campaign_type": "Social Media",
+    "start_date": "2025-06-20",
+    "end_date": "2025-07-14",
+    "budget": 94697.67,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_006",
+    "campaign_name": "Multi-tiered cohesive secured line Campaign",
+    "campaign_type": "Email",
+    "start_date": "2025-06-20",
+    "end_date": "2025-09-08",
+    "budget": 93933.68,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_007",
+    "campaign_name": "Public-key eco-centric superstructure Campaign",
+    "campaign_type": "Social Media",
+    "start_date": "2025-06-20",
+    "end_date": "2025-09-15",
+    "budget": 74507.47,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_008",
+    "campaign_name": "Vision-oriented systemic knowledgebase Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-20",
+    "end_date": "2025-09-13",
+    "budget": 4143.1,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  },
+  {
+    "campaign_id": "CAMP_009",
+    "campaign_name": "Switchable client-driven interface Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-20",
+    "end_date": "2025-09-08",
+    "budget": 99565.01,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-21T15:15:28.372023"
+  }
+]
