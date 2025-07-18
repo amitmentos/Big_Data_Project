@@ -1,9 +1,11 @@
+# Silver Layer ER Diagram
+
 ```mermaid
 erDiagram
 standardized_sales {
     string sale_id PK
     string product_id FK
-    bigint customer_sk FK
+    string customer_id FK
     string campaign_id FK
     date date FK
     decimal quantity
@@ -27,7 +29,7 @@ standardized_user_events {
     string session_id
 }
 
-dim_customer_scd {
+dim_customer {
     string customer_id PK
     string customer_name
     string membership_tier
@@ -44,7 +46,6 @@ dim_product {
     string product_name
     string brand
     string category
-    boolean is_active
     timestamp last_updated
 }
 
@@ -66,11 +67,10 @@ dim_marketing_campaign {
     date end_date
 }
 
-standardized_sales ||--o{ dim_customer_scd : "customer_sk"
-standardized_user_events ||--o{ dim_customer_scd : "customer_id"
+standardized_sales ||--o{ dim_customer : "customer_id"
+standardized_user_events ||--o{ dim_customer : "customer_id"
 standardized_sales ||--o{ dim_product : "product_id"
 standardized_user_events ||--o{ dim_product : "product_id"
 standardized_sales ||--o{ dim_date : "date"
 standardized_user_events ||--o{ dim_date : "date"
 standardized_sales ||--o{ dim_marketing_campaign : "campaign_id"
-```

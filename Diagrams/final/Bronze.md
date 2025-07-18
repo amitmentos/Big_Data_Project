@@ -1,3 +1,5 @@
+# Bronze Layer ER Diagram
+
 ```mermaid
 erDiagram
 RAW_USER_EVENTS {
@@ -24,10 +26,10 @@ RAW_MARKETPLACE_SALES {
     decimal amount
     string currency
     int quantity
+    string status
     timestamp transaction_time
     timestamp settlement_time
     string payment_method
-    string status
     map marketplace_metadata
     timestamp ingestion_time
     timestamp kafka_timestamp
@@ -74,4 +76,3 @@ RAW_MARKETING_CAMPAIGNS {
 RAW_USER_EVENTS ||--o{ RAW_CUSTOMER_DATA : "customer_id"
 RAW_USER_EVENTS ||--o{ RAW_PRODUCT_CATALOG : "product_id"
 RAW_MARKETPLACE_SALES ||--o{ RAW_PRODUCT_CATALOG : "product_id"
-```

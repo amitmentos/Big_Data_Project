@@ -1,3 +1,5 @@
+# Gold Layer ER Diagram
+
 ```mermaid
 erDiagram
 fact_sales {
@@ -80,7 +82,6 @@ fact_user_activity ||--o{ customer_segmentation : "customer_id"
 fact_user_activity ||--o{ customer_product_interactions : "product_id"
 
 sales_performance_metrics ||--o{ customer_segmentation : "customer_id"
-campaign_effectiveness ||--o{ customer_segmentation : "customer_segment"
 sales_performance_metrics ||--o{ customer_product_interactions : "product_id"
+campaign_effectiveness ||--o{ customer_segmentation : "customer_segment"
 customer_segmentation ||--o{ customer_product_interactions : "top_customer_segment"
-```
