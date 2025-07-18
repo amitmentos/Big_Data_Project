@@ -30,11 +30,11 @@ class CompletePlatformFlow:
         banner = """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║    🚀 E-COMMERCE BIG DATA PLATFORM - COMPLETE FLOW DEMONSTRATION 🚀         ║
+║     E-COMMERCE BIG DATA PLATFORM - COMPLETE FLOW DEMONSTRATION          ║
 ║                                                                              ║
-║    🎯 Real-time Data Processing | 📊 ML Feature Engineering                 ║
-║    🏗️  Medallion Architecture   | ⚡ Apache Spark Processing                ║
-║    📈 Business Intelligence     | 🔄 Workflow Orchestration                ║
+║     Real-time Data Processing |  ML Feature Engineering                 ║
+║     Medallion Architecture   |  Apache Spark Processing                ║
+║     Business Intelligence     |  Workflow Orchestration                ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """
@@ -43,21 +43,21 @@ class CompletePlatformFlow:
     def step_header(self, step_num, title, description):
         """Beautiful step headers"""
         print(f"\n{'='*80}")
-        print(f"🎯 STEP {step_num}: {title}")
-        print(f"📋 {description}")
+        print(f" STEP {step_num}: {title}")
+        print(f" {description}")
         print(f"{'='*80}")
         
     def sub_step(self, message):
         """Sub-step formatting"""
-        print(f"   ▶️  {message}")
+        print(f"    {message}")
         
     def success_message(self, message):
         """Success message formatting"""
-        print(f"   ✅ {message}")
+        print(f"    {message}")
         
     def info_message(self, message):
         """Info message formatting"""
-        print(f"   ℹ️  {message}")
+        print(f"    {message}")
         
     def wait_for_services(self, max_attempts=60):
         """Wait for all services to be healthy"""
@@ -119,7 +119,7 @@ class CompletePlatformFlow:
             filepath = Path("sample_data") / filename
             if filepath.exists():
                 size_mb = filepath.stat().st_size / (1024 * 1024)
-                print(f"      📄 {filename:<25} | {description} ({size_mb:.1f}MB)")
+                print(f"       {filename:<25} | {description} ({size_mb:.1f}MB)")
     
     def start_streaming_producers(self):
         """Start Kafka streaming data producers"""
@@ -197,7 +197,7 @@ class CompletePlatformFlow:
                     topics = [t.strip() for t in result.stdout.strip().split('\n') if t.strip()]
                     if topics:
                         for topic in topics:
-                            print(f"      🔄 {topic}")
+                            print(f"       {topic}")
                         return
                     else:
                         if attempt < max_retries - 1:
@@ -205,16 +205,16 @@ class CompletePlatformFlow:
                             time.sleep(5)
                             continue
                         else:
-                            print(f"      🔄 user_activity_events (expected)")
-                            print(f"      🔄 marketplace_sales (expected)")
+                            print(f"       user_activity_events (expected)")
+                            print(f"       marketplace_sales (expected)")
                 else:
                     if attempt < max_retries - 1:
                         self.info_message(f"Failed to list topics (attempt {attempt+1}). Retrying in 5 seconds...")
                         time.sleep(5)
                     else:
                         self.info_message(f"Could not fetch Kafka topics: {result.stderr}")
-                        print(f"      🔄 user_activity_events (expected)")
-                        print(f"      🔄 marketplace_sales (expected)")
+                        print(f"       user_activity_events (expected)")
+                        print(f"       marketplace_sales (expected)")
                         
             except Exception as e:
                 if attempt < max_retries - 1:
@@ -222,8 +222,8 @@ class CompletePlatformFlow:
                     time.sleep(5)
                 else:
                     self.info_message(f"Could not fetch Kafka topics: {e}")
-                    print(f"      🔄 user_activity_events (expected)")
-                    print(f"      🔄 marketplace_sales (expected)")
+                    print(f"       user_activity_events (expected)")
+                    print(f"       marketplace_sales (expected)")
     
     def create_bronze_sample_data(self):
         """Create sample Bronze layer data if it doesn't exist"""
@@ -375,7 +375,7 @@ class CompletePlatformFlow:
             "--date", processing_date
         ]
         
-        print("🔄 Running Bronze layer ingestion...")
+        print("Running Bronze layer ingestion...")
         print(f"   • Ingesting product catalog data for {processing_date}")
         print(f"   • Ingesting customer data for {processing_date}") 
         print(f"   • Ingesting marketing campaigns for {processing_date}")
@@ -385,7 +385,7 @@ class CompletePlatformFlow:
         
         result = subprocess.run(spark_cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            print("✅ Bronze layer ingestion completed successfully")
+            print(" Bronze layer ingestion completed successfully")
             print("   • Data stored in MinIO bronze buckets")
             print("   • Iceberg tables created and populated")
             print("   • Customer, product, campaign, sales, and activity data generated")
@@ -395,7 +395,7 @@ class CompletePlatformFlow:
             self.verify_bronze_tables()
             
         else:
-            print(f"⚠️  Bronze ingestion completed with status: {result.returncode}")
+            print(f"  Bronze ingestion completed with status: {result.returncode}")
             if result.stderr:
                 print(f"   Details: {result.stderr[:200]}...")
             # Continue anyway as Bronze schemas should exist
@@ -436,12 +436,12 @@ class CompletePlatformFlow:
                 if result.returncode == 0 and result.stdout.strip():
                     lines = result.stdout.strip().split('\n')
                     count = lines[-1] if lines else "0"
-                    print(f"      ✅ {table}: {count} records")
+                    print(f"       {table}: {count} records")
                 else:
-                    print(f"      ❌ {table}: Could not verify")
+                    print(f"       {table}: Could not verify")
                     
             except Exception as e:
-                print(f"      ⚠️  {table}: Verification failed ({str(e)[:50]})")
+                print(f"       {table}: Verification failed ({str(e)[:50]})")
 
     def run_silver_transformations(self):
         """Step 5: Run Silver layer transformations"""
@@ -474,30 +474,30 @@ class CompletePlatformFlow:
             "--date", current_date
         ]
         
-        print("🔄 Running Silver layer transformations...")
-        print("   ⚙️  Standardizing user events...")
-        print("   ⚙️  Processing sales data...")
-        print("   ⚙️  Building customer SCD...")
-        print("   ⚙️  Transforming product catalog...")
+        print("Running Silver layer transformations...")
+        print("    Standardizing user events...")
+        print("    Processing sales data...")
+        print("    Building customer SCD...")
+        print("    Transforming product catalog...")
         
         try:
             result = subprocess.run(spark_cmd, capture_output=True, text=True, timeout=300)
             if result.returncode == 0:
-                print("✅ Silver layer transformations completed successfully!")
+                print(" Silver layer transformations completed successfully!")
                 
                 # Verify some Silver tables were created
                 self.verify_silver_tables()
                 
             else:
-                print(f"⚠️  Silver transformations completed with status: {result.returncode}")
+                print(f"  Silver transformations completed with status: {result.returncode}")
                 if result.stderr:
                     print(f"   Details: {result.stderr[:200]}...")
                 # Continue with flow even if some warnings occur
                     
         except subprocess.TimeoutExpired:
-            print("⏳ Silver transformations are running (timeout reached)")
+            print(" Silver transformations are running (timeout reached)")
         except Exception as e:
-            print(f"⚠️  Silver transformations: {e}")
+            print(f"  Silver transformations: {e}")
         
         return True
 
@@ -533,12 +533,12 @@ class CompletePlatformFlow:
                 ], capture_output=True, text=True, timeout=30)
                 
                 if result.returncode == 0:
-                    print(f"      ✅ {table}: Table created")
+                    print(f"       {table}: Table created")
                 else:
-                    print(f"      ❌ {table}: Not found")
+                    print(f"       {table}: Not found")
                     
             except Exception as e:
-                print(f"      ⚠️  {table}: Verification failed ({str(e)[:50]})")
+                print(f"       {table}: Verification failed ({str(e)[:50]})")
 
     def run_gold_aggregations(self):
         """Step 6: Run Gold layer aggregations"""
@@ -632,16 +632,19 @@ class CompletePlatformFlow:
                 if result.returncode == 0 and result.stdout.strip():
                     lines = result.stdout.strip().split('\n')
                     count = lines[-1] if lines else "0"
-                    print(f"      ✅ {table}: {count} records")
+                    print(f"       {table}: {count} records")
                 else:
-                    print(f"      ❌ {table}: Could not verify")
+                    print(f"       {table}: Could not verify")
                     
             except Exception as e:
-                print(f"      ⚠️  {table}: Verification failed ({str(e)[:50]})")
+                print(f"       {table}: Verification failed ({str(e)[:50]})")
 
     def run_ml_feature_engineering(self):
         """Step 7: Run ML feature engineering"""
         self.step_header(7, "ML FEATURE ENGINEERING", "Creating features for machine learning models")
+        
+        # Define processing date as current date
+        processing_date = datetime.now().strftime('%Y-%m-%d')
         
         self.sub_step("Generating customer behavior features...")
         self.sub_step("Computing RFM analysis...")
@@ -665,7 +668,8 @@ class CompletePlatformFlow:
                 '--conf', 'spark.hadoop.fs.s3a.path.style.access=true',
                 '--conf', 'spark.hadoop.fs.s3a.connection.ssl.enabled=false',
                 '--conf', 'spark.sql.adaptive.enabled=true',
-                '/opt/processing/spark-apps/ml_feature_engineering.py'
+                '/opt/processing/spark-apps/ml_feature_engineering.py',
+                '--date', processing_date
             ], capture_output=True, text=True, timeout=300)
             
             if result.returncode == 0:
@@ -772,9 +776,9 @@ class CompletePlatformFlow:
             if result.stdout.strip():
                 for line in result.stdout.strip().split('\n'):
                     if line.strip():
-                        print(f"      🗂️  {line.strip()}")
+                        print(f"       {line.strip()}")
             else:
-                print("      🗂️  bronze/, silver/, gold/, warehouse/")
+                print("       bronze/, silver/, gold/, warehouse/")
                 
         except Exception as e:
             self.info_message(f"MinIO bucket listing: {e}")
@@ -783,11 +787,11 @@ class CompletePlatformFlow:
         """Show active Spark applications"""
         try:
             # This would show running Spark apps
-            print("      ⚡ Bronze ingestion application")
-            print("      ⚡ Silver transformation application") 
-            print("      ⚡ Gold aggregation application")
-            print("      ⚡ ML feature engineering application")
-            print("      ⚡ Streaming consumer application")
+            print("       Bronze ingestion application")
+            print("       Silver transformation application") 
+            print("       Gold aggregation application")
+            print("       ML feature engineering application")
+            print("       Streaming consumer application")
             
         except Exception as e:
             self.info_message(f"Spark applications: {e}")
@@ -862,16 +866,16 @@ class CompletePlatformFlow:
         """Step 11: Show final summary and access points"""
         self.step_header(11, "PLATFORM READY", "All systems operational - Platform demonstration complete!")
         
-        print("\n🎉 CONGRATULATIONS! Your E-commerce Big Data Platform is fully operational!")
-        print("\n📊 DATA FLOW SUMMARY:")
-        print("   1️⃣  Raw data → Bronze layer (Iceberg tables)")
-        print("   2️⃣  Bronze → Silver layer (cleaned & validated)")
-        print("   3️⃣  Silver → Gold layer (business aggregations)")
-        print("   4️⃣  Real-time streams → Kafka → Processing")
-        print("   5️⃣  ML features → Feature store")
-        print("   6️⃣  Data quality → Automated monitoring")
+        print("\n CONGRATULATIONS! Your E-commerce Big Data Platform is fully operational!")
+        print("\n DATA FLOW SUMMARY:")
+        print("   1  Raw data → Bronze layer (Iceberg tables)")
+        print("   2  Bronze → Silver layer (cleaned & validated)")
+        print("   3  Silver → Gold layer (business aggregations)")
+        print("   4  Real-time streams → Kafka → Processing")
+        print("   5  ML features → Feature store")
+        print("   6  Data quality → Automated monitoring")
         
-        print("\n🌐 ACCESS POINTS:")
+        print("\n ACCESS POINTS:")
         access_points = [
             ("Airflow UI", "http://localhost:8081", "admin/admin", "Workflow orchestration"),
             ("Spark Master UI", "http://localhost:8080", "No auth", "Distributed processing"),
@@ -879,35 +883,35 @@ class CompletePlatformFlow:
         ]
         
         for service, url, auth, description in access_points:
-            print(f"   🔗 {service:<20} | {url:<25} | {auth:<15} | {description}")
+            print(f"    {service:<20} | {url:<25} | {auth:<15} | {description}")
         
-        print("\n🚀 PLATFORM CAPABILITIES DEMONSTRATED:")
+        print("\n PLATFORM CAPABILITIES DEMONSTRATED:")
         capabilities = [
-            "✅ Medallion Architecture (Bronze → Silver → Gold)",
-            "✅ Real-time streaming with Kafka",
-            "✅ Distributed processing with Spark",
-            "✅ Workflow orchestration with Airflow", 
-            "✅ ACID transactions with Iceberg",
-            "✅ ML feature engineering pipeline",
-            "✅ Comprehensive data quality framework",
-            "✅ Object storage with MinIO",
-            "✅ Containerized microservices architecture"
+            " Medallion Architecture (Bronze → Silver → Gold)",
+            " Real-time streaming with Kafka",
+            " Distributed processing with Spark",
+            " Workflow orchestration with Airflow", 
+            " ACID transactions with Iceberg",
+            " ML feature engineering pipeline",
+            " Comprehensive data quality framework",
+            " Object storage with MinIO",
+            " Containerized microservices architecture"
         ]
         
         for capability in capabilities:
             print(f"   {capability}")
         
-        print(f"\n💡 TIP: Run 'python demo_platform.py' for detailed platform tour")
-        print(f"📚 TIP: Check logs/ directory for detailed processing logs")
-        print(f"🔍 TIP: Explore sample_data/ directory for input data examples")
+        print(f"\n TIP: Run 'python demo_platform.py' for detailed platform tour")
+        print(f" TIP: Check logs/ directory for detailed processing logs")
+        print(f" TIP: Explore sample_data/ directory for input data examples")
         
         print("\n" + "="*80)
-        print("🏆 PLATFORM DEMONSTRATION COMPLETE - READY FOR EVALUATION! 🏆")
+        print(" PLATFORM DEMONSTRATION COMPLETE - READY FOR EVALUATION! ")
         print("="*80)
     
     def cleanup_on_exit(self, signum, frame):
         """Cleanup function for graceful shutdown"""
-        print("\n🛑 Shutting down demonstration...")
+        print("\n Shutting down demonstration...")
         self.running = False
         sys.exit(0)
     
@@ -922,7 +926,7 @@ class CompletePlatformFlow:
         try:
             # Step 1: Wait for services
             if not self.wait_for_services():
-                print("❌ Services failed to start properly. Please run './setup.sh' first.")
+                print(" Services failed to start properly. Please run './setup.sh' first.")
                 return False
             
             # Step 2: Setup data
@@ -967,34 +971,34 @@ class CompletePlatformFlow:
             
             # Check if we should run continuously or exit for next demo
             if len(sys.argv) > 1 and sys.argv[1] == "--no-continuous":
-                print("\n✅ Complete demo finished - ready for next step...")
+                print("\n Complete demo finished - ready for next step...")
                 return True
             
             # Keep running to show live status
-            print("\n🔄 Platform is now running continuously...")
+            print("\n Platform is now running continuously...")
             print("   Press Ctrl+C to stop the demonstration")
             
             while self.running:
                 time.sleep(30)
-                print(f"⏰ {datetime.now().strftime('%H:%M:%S')} - Platform operational, processes running...")
+                print(f" {datetime.now().strftime('%H:%M:%S')} - Platform operational, processes running...")
             
             return True
             
         except KeyboardInterrupt:
-            print("\n🛑 Demonstration stopped by user")
+            print("\n Demonstration stopped by user")
             return True
         except Exception as e:
-            print(f"\n❌ Error during demonstration: {e}")
+            print(f"\n Error during demonstration: {e}")
             return False
 
 if __name__ == "__main__":
-    print("🚀 Starting Complete E-commerce Data Platform Flow...")
+    print(" Starting Complete E-commerce Data Platform Flow...")
     
     flow = CompletePlatformFlow()
     success = flow.run_complete_flow()
     
     if success:
-        print("✅ Platform demonstration completed successfully!")
+        print(" Platform demonstration completed successfully!")
     else:
-        print("❌ Platform demonstration encountered issues")
+        print(" Platform demonstration encountered issues")
         sys.exit(1) 

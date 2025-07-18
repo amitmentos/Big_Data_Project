@@ -495,61 +495,33 @@ class BronzeIngestion:
             raise
 
     def ingest_marketing_campaigns(self, process_date: str):
-        """Simulate marketing campaigns ingestion"""
-        logger.info("Generating sample marketing campaigns...")
+        """Ingest marketing campaigns from sample JSON file with dynamic updates"""
+        logger.info("Loading marketing campaigns from sample data file with dynamic processing...")
         
         try:
-            # Create simple sample data
-            data = [
-                (
-                    'CAMP_001',
-                    'Summer Sale 2024',
-                    'Seasonal',
-                    '2024-06-01',
-                    '2024-08-31',
-                    '50000.00',
-                    'All Customers',
-                    datetime.now().isoformat()
-                ),
-                (
-                    'CAMP_002',
-                    'New Customer Welcome',
-                    'Onboarding',
-                    '2024-01-01',
-                    '2024-12-31',
-                    '25000.00',
-                    'New Customers',
-                    datetime.now().isoformat()
-                ),
-                (
-                    'CAMP_003',
-                    'Black Friday 2024',
-                    'Holiday',
-                    '2024-11-25',
-                    '2024-11-29',
-                    '100000.00',
-                    'High Value Customers',
-                    datetime.now().isoformat()
-                )
-            ]
+            # Load from JSON file instead of hardcoded values
+            sample_data_path = "/opt/processing/sample_data/campaigns.json"
             
-            # Define schema
-            schema = StructType([
-                StructField("campaign_id", StringType(), True),
-                StructField("campaign_name", StringType(), True),
-                StructField("campaign_type", StringType(), True),
-                StructField("start_date", StringType(), True),
-                StructField("end_date", StringType(), True),
-                StructField("budget", StringType(), True),
-                StructField("target_audience", StringType(), True),
-                StructField("ingestion_time", StringType(), True)
-            ])
+            # Read the JSON file using Spark with multiLine option
+            campaigns_df = self.spark.read.option("multiLine", "true").json(sample_data_path)
             
-            # Create DataFrame
-            campaigns_df = self.spark.createDataFrame(data, schema)
-            record_count = len(data)  # Store count before DataFrame operations
+            # Debug: Show schema
+            logger.info("JSON file schema:")
+            campaigns_df.printSchema()
             
-            # Convert types
+            # Debug: Show sample data
+            logger.info("Sample data from JSON file:")
+            campaigns_df.show(3, truncate=False)
+            
+            # Update ingestion time to current time
+            current_timestamp = datetime.now()
+            campaigns_df = campaigns_df.withColumn("ingestion_time", lit(current_timestamp.isoformat()))
+            
+            # Show campaign data info
+            record_count = campaigns_df.count()
+            logger.info(f"Loaded {record_count} campaigns from JSON file")
+            
+            # Convert types - only selecting columns that match the table schema
             campaigns_df = campaigns_df.select(
                 col("campaign_id"),
                 col("campaign_name"),
@@ -561,11 +533,45 @@ class BronzeIngestion:
                 to_timestamp(col("ingestion_time")).alias("ingestion_time")
             )
             
-            campaigns_df.write \
-                .mode("append") \
-                .insertInto("bronze.raw_marketing_campaigns")
+            # Check if the bronze.raw_marketing_campaigns table exists and has data
+            table_exists = False
+            try:
+                existing_count = self.spark.sql("SELECT COUNT(*) as count FROM bronze.raw_marketing_campaigns").collect()[0]['count']
+                table_exists = existing_count > 0
+                logger.info(f"Existing records in bronze.raw_marketing_campaigns: {existing_count}")
+            except Exception as e:
+                logger.info(f"Table doesn't exist or is empty: {str(e)}")
+                
+            # Option 1: For new tables or empty tables, just insert all records
+            if not table_exists:
+                logger.info("No existing campaigns found. Inserting all records.")
+                campaigns_df.write \
+                    .mode("append") \
+                    .insertInto("bronze.raw_marketing_campaigns")
+                
+                logger.info(f"Ingested {record_count} new campaign records")
+            # Option 2: For existing tables, ensure we have the latest for each campaign
+            else:
+                # Create a temporary view of the new data
+                campaigns_df.createOrReplaceTempView("new_campaigns_temp")
+                
+                # Insert all records as we want to maintain history in the bronze layer
+                # This is important for the SCD Type 2 processing later
+                campaigns_df.write \
+                    .mode("append") \
+                    .insertInto("bronze.raw_marketing_campaigns")
+                
+                # Count after insertion
+                after_count = self.spark.sql("SELECT COUNT(*) as count FROM bronze.raw_marketing_campaigns").collect()[0]['count']
+                logger.info(f"Record count after insertion: {after_count} (added {record_count} records)")
+                
+                # Show distinct campaign count for verification
+                distinct_count = self.spark.sql(
+                    "SELECT COUNT(DISTINCT campaign_id) as count FROM bronze.raw_marketing_campaigns"
+                ).collect()[0]['count']
+                logger.info(f"Distinct campaigns in bronze layer: {distinct_count}")
             
-            logger.info(f"Ingested {record_count} campaign records")
+            logger.info(f"Successfully ingested campaigns with {record_count} records")
             
         except Exception as e:
             logger.error(f"Error ingesting marketing campaigns: {str(e)}")

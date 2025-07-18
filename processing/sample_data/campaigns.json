@@ -1,0 +1,102 @@
+[
+  {
+    "campaign_id": "CAMP_000",
+    "campaign_name": "Managed well-modulated leverage Campaign",
+    "campaign_type": "Social Media",
+    "start_date": "2025-06-23",
+    "end_date": "2025-08-14",
+    "budget": 99530.38,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_001",
+    "campaign_name": "Innovative context-sensitive concept Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-23",
+    "end_date": "2025-07-22",
+    "budget": 40786.81,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_002",
+    "campaign_name": "Reactive system-worthy matrices Campaign",
+    "campaign_type": "Email",
+    "start_date": "2025-06-23",
+    "end_date": "2025-09-21",
+    "budget": 74833.88,
+    "target_audience": "VIP",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_003",
+    "campaign_name": "Re-engineered solution-oriented productivity Campaign",
+    "campaign_type": "Email",
+    "start_date": "2025-06-23",
+    "end_date": "2025-09-19",
+    "budget": 84320.96,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_004",
+    "campaign_name": "Polarized 4thgeneration moderator Campaign",
+    "campaign_type": "Influencer",
+    "start_date": "2025-06-23",
+    "end_date": "2025-07-15",
+    "budget": 5492.24,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_005",
+    "campaign_name": "Fully-configurable interactive open architecture Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-23",
+    "end_date": "2025-09-08",
+    "budget": 5501.13,
+    "target_audience": "VIP",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_006",
+    "campaign_name": "Self-enabling contextually-based middleware Campaign",
+    "campaign_type": "Display",
+    "start_date": "2025-06-23",
+    "end_date": "2025-07-10",
+    "budget": 65066.36,
+    "target_audience": "Category Specific",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_007",
+    "campaign_name": "Extended optimal toolset Campaign",
+    "campaign_type": "Search",
+    "start_date": "2025-06-23",
+    "end_date": "2025-08-20",
+    "budget": 73463.06,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_008",
+    "campaign_name": "User-centric grid-enabled protocol Campaign",
+    "campaign_type": "Influencer",
+    "start_date": "2025-06-23",
+    "end_date": "2025-09-20",
+    "budget": 74204.6,
+    "target_audience": "New Customers",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  },
+  {
+    "campaign_id": "CAMP_009",
+    "campaign_name": "Managed secondary focus group Campaign",
+    "campaign_type": "Influencer",
+    "start_date": "2025-06-23",
+    "end_date": "2025-07-20",
+    "budget": 90655.15,
+    "target_audience": "All",
+    "ingestion_time": "2025-06-24T18:27:18.864922"
+  }
+]

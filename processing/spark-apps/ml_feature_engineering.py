@@ -1,10 +1,11 @@
- # processing/spark-apps/ml_feature_engineering.py
+# processing/spark-apps/ml_feature_engineering.py
 
 import argparse
 import logging
 from datetime import datetime, timedelta
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
+from pyspark.sql.functions import lit, current_timestamp, col  # Explicit imports
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
 import sys
@@ -103,6 +104,18 @@ class MLFeatureEngineering:
         date_30d_ago = (datetime.strptime(as_of_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
         date_90d_ago = (datetime.strptime(as_of_date, '%Y-%m-%d') - timedelta(days=90)).strftime('%Y-%m-%d')
         
+        logger.info(f"Date ranges: {date_90d_ago} to {as_of_date}")
+        logger.info(f"7d ago: {date_7d_ago}, 30d ago: {date_30d_ago}, 90d ago: {date_90d_ago}")
+        
+        # Check source data availability
+        source_count = self.spark.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM silver.standardized_user_events 
+            WHERE DATE(event_time) >= '{date_90d_ago}' 
+              AND DATE(event_time) <= '{as_of_date}'
+        """).collect()[0]['count']
+        logger.info(f"Found {source_count} user events in date range for recency features")
+        
         recency_features = self.spark.sql(f"""
             WITH user_interactions AS (
                 SELECT 
@@ -149,9 +162,9 @@ class MLFeatureEngineering:
                     -- Cart abandonment flag
                     CASE 
                         WHEN SUM(CASE WHEN event_type = 'add_to_cart' THEN 1 ELSE 0 END) > 0 
-                         AND SUM(CASE WHEN event_type = 'purchase_complete' THEN 1 ELSE 0 END) = 0 
-                        THEN true 
-                        ELSE false 
+                         AND SUM(CASE WHEN event_type = 'purchase' THEN 1 ELSE 0 END) = 0 
+                        THEN CAST(TRUE AS BOOLEAN)
+                        ELSE CAST(FALSE AS BOOLEAN)
                     END as cart_abandon_flag
                     
                 FROM user_interactions
@@ -161,6 +174,10 @@ class MLFeatureEngineering:
             SELECT * FROM recency_agg
         """)
         
+        # Debug the recency features result
+        logger.info("Debugging recency features result...")
+        self.debug_dataframe_schema(recency_features, "RECENCY_FEATURES")
+        
         return recency_features
 
     def calculate_frequency_features(self, as_of_date: str):
@@ -168,6 +185,17 @@ class MLFeatureEngineering:
         logger.info("Calculating frequency features...")
         
         date_30d_ago = (datetime.strptime(as_of_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        logger.info(f"Frequency date range: {date_30d_ago} to {as_of_date}")
+        
+        # Check source data availability
+        sales_count = self.spark.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM silver.standardized_sales 
+            WHERE DATE(transaction_time) >= '{date_30d_ago}' 
+              AND DATE(transaction_time) <= '{as_of_date}'
+        """).collect()[0]['count']
+        logger.info(f"Found {sales_count} sales records in date range for frequency features")
         
         frequency_features = self.spark.sql(f"""
             WITH purchase_history AS (
@@ -198,6 +226,8 @@ class MLFeatureEngineering:
             SELECT * FROM frequency_agg
         """)
         
+        logger.info(f"Frequency features calculated: {frequency_features.count()} customer-product pairs")
+        frequency_features = frequency_features.cache()
         return frequency_features
 
     def calculate_category_affinity(self, as_of_date: str):
@@ -205,6 +235,18 @@ class MLFeatureEngineering:
         logger.info("Calculating category affinity features...")
         
         date_90d_ago = (datetime.strptime(as_of_date, '%Y-%m-%d') - timedelta(days=90)).strftime('%Y-%m-%d')
+        
+        logger.info(f"Category affinity date range: {date_90d_ago} to {as_of_date}")
+        
+        # Check source data availability
+        sales_with_products = self.spark.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM silver.standardized_sales s
+            JOIN silver.dim_product p ON s.product_id = p.product_id AND p.is_current = true
+            WHERE DATE(s.transaction_time) >= '{date_90d_ago}' 
+              AND DATE(s.transaction_time) <= '{as_of_date}'
+        """).collect()[0]['count']
+        logger.info(f"Found {sales_with_products} sales records with product info for category affinity")
         
         category_features = self.spark.sql(f"""
             WITH customer_category_purchases AS (
@@ -260,11 +302,21 @@ class MLFeatureEngineering:
             FROM product_category_mapping
         """)
         
+        logger.info(f"Category affinity features calculated: {category_features.count()} customer-product pairs")
+        category_features = category_features.cache()
         return category_features
 
     def calculate_customer_features(self, as_of_date: str):
         """Calculate customer-level features"""
         logger.info("Calculating customer features...")
+        
+        # Check source data availability
+        total_customers = self.spark.sql(f"""
+            SELECT COUNT(DISTINCT customer_id) as count 
+            FROM silver.standardized_sales 
+            WHERE DATE(transaction_time) <= '{as_of_date}'
+        """).collect()[0]['count']
+        logger.info(f"Found {total_customers} unique customers for customer features")
         
         customer_features = self.spark.sql(f"""
             WITH customer_stats AS (
@@ -286,6 +338,8 @@ class MLFeatureEngineering:
             SELECT * FROM customer_stats
         """)
         
+        logger.info(f"Customer features calculated: {customer_features.count()} customers")
+        customer_features = customer_features.cache()
         return customer_features
 
     def calculate_product_features(self, as_of_date: str):
@@ -293,6 +347,14 @@ class MLFeatureEngineering:
         logger.info("Calculating product features...")
         
         date_30d_ago = (datetime.strptime(as_of_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        # Check source data availability
+        total_products = self.spark.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM silver.dim_product 
+            WHERE is_current = true
+        """).collect()[0]['count']
+        logger.info(f"Found {total_products} current products for product features")
         
         product_features = self.spark.sql(f"""
             WITH product_stats AS (
@@ -352,6 +414,8 @@ class MLFeatureEngineering:
             FROM product_with_popularity
         """)
         
+        logger.info(f"Product features calculated: {product_features.count()} products")
+        product_features = product_features.cache()
         return product_features
 
     def calculate_target_variables(self, as_of_date: str):
@@ -360,6 +424,17 @@ class MLFeatureEngineering:
         
         date_7d_future = (datetime.strptime(as_of_date, '%Y-%m-%d') + timedelta(days=7)).strftime('%Y-%m-%d')
         date_30d_future = (datetime.strptime(as_of_date, '%Y-%m-%d') + timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        logger.info(f"Target date range: {as_of_date} to {date_30d_future}")
+        
+        # Check if we have future data for targets
+        future_sales_count = self.spark.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM silver.standardized_sales 
+            WHERE DATE(transaction_time) >= '{as_of_date}' 
+              AND DATE(transaction_time) < '{date_30d_future}'
+        """).collect()[0]['count']
+        logger.info(f"Found {future_sales_count} future sales records for target calculation")
         
         target_features = self.spark.sql(f"""
             WITH future_purchases AS (
@@ -396,19 +471,37 @@ class MLFeatureEngineering:
             SELECT * FROM customer_product_targets
         """)
         
+        logger.info(f"Target variables calculated: {target_features.count()} customer-product pairs")
+        target_features = target_features.cache()
         return target_features
 
     def generate_comprehensive_features(self, as_of_date: str):
         """Generate comprehensive ML feature set"""
         logger.info(f"Generating ML features for date: {as_of_date}")
         
-        # Calculate individual feature sets
-        recency_features = self.calculate_recency_features(as_of_date)
-        frequency_features = self.calculate_frequency_features(as_of_date)
-        category_features = self.calculate_category_affinity(as_of_date)
-        customer_features = self.calculate_customer_features(as_of_date)
-        product_features = self.calculate_product_features(as_of_date)
-        target_features = self.calculate_target_variables(as_of_date)
+        try:
+            # Calculate individual feature sets with error handling
+            logger.info("Step 1: Calculating recency features...")
+            recency_features = self.calculate_recency_features(as_of_date)
+            
+            logger.info("Step 2: Calculating frequency features...")
+            frequency_features = self.calculate_frequency_features(as_of_date)
+            
+            logger.info("Step 3: Calculating category features...")
+            category_features = self.calculate_category_affinity(as_of_date)
+            
+            logger.info("Step 4: Calculating customer features...")
+            customer_features = self.calculate_customer_features(as_of_date)
+            
+            logger.info("Step 5: Calculating product features...")
+            product_features = self.calculate_product_features(as_of_date)
+            
+            logger.info("Step 6: Calculating target features...")
+            target_features = self.calculate_target_variables(as_of_date)
+            
+        except Exception as e:
+            logger.error(f"Error during feature calculation: {str(e)}")
+            raise
         
         # Get all unique customer-product pairs from interactions
         base_pairs = self.spark.sql(f"""
@@ -424,14 +517,41 @@ class MLFeatureEngineering:
         
         logger.info(f"Found {base_pairs.count()} unique customer-product pairs")
         
+        # Debug base pairs
+        self.debug_dataframe_schema(base_pairs, "BASE_PAIRS")
+        
         # Join all features together
-        final_features = base_pairs \
-            .join(recency_features, ["customer_id", "product_id"], "left") \
-            .join(frequency_features, ["customer_id", "product_id"], "left") \
-            .join(category_features, ["customer_id", "product_id"], "left") \
-            .join(customer_features, ["customer_id"], "left") \
-            .join(product_features, ["product_id"], "left") \
-            .join(target_features, ["customer_id", "product_id"], "left")
+        logger.info("Starting feature joins...")
+        
+        # Join recency features
+        final_features = base_pairs.join(recency_features, ["customer_id", "product_id"], "left")
+        logger.info("After recency features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_RECENCY_JOIN")
+        
+        # Join frequency features
+        final_features = final_features.join(frequency_features, ["customer_id", "product_id"], "left")
+        logger.info("After frequency features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_FREQUENCY_JOIN")
+        
+        # Join category features
+        final_features = final_features.join(category_features, ["customer_id", "product_id"], "left")
+        logger.info("After category features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_CATEGORY_JOIN")
+        
+        # Join customer features  
+        final_features = final_features.join(customer_features, ["customer_id"], "left")
+        logger.info("After customer features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_CUSTOMER_JOIN")
+        
+        # Join product features
+        final_features = final_features.join(product_features, ["product_id"], "left")  
+        logger.info("After product features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_PRODUCT_JOIN")
+        
+        # Join target features
+        final_features = final_features.join(target_features, ["customer_id", "product_id"], "left")
+        logger.info("After target features join:")
+        self.debug_dataframe_schema(final_features, "AFTER_TARGET_JOIN")
         
         # Fill null values with appropriate defaults
         final_features = final_features.fillna({
@@ -458,17 +578,77 @@ class MLFeatureEngineering:
             'purchased_next_30d': False
         })
         
+        # Debug after fillna
+        logger.info("After fillna operation:")
+        self.debug_dataframe_schema(final_features, "AFTER_FILLNA")
+        
         # Add metadata
         final_features = final_features.withColumn("feature_date", lit(as_of_date).cast("date")) \
                                       .withColumn("created_time", current_timestamp())
         
         return final_features
 
+    def debug_dataframe_schema(self, df, df_name):
+        """Debug function to print DataFrame schema and sample data"""
+        logger.info(f"=== DEBUGGING {df_name} ===")
+        logger.info(f"Schema for {df_name}:")
+        for field in df.schema.fields:
+            logger.info(f"  {field.name}: {field.dataType}")
+        
+        count = df.count()
+        logger.info(f"Row count for {df_name}: {count}")
+        
+        if count > 0:
+            logger.info(f"Sample data from {df_name}:")
+            sample_data = df.limit(3).collect()
+            for i, row in enumerate(sample_data):
+                logger.info(f"  Row {i+1}: {row.asDict()}")
+        
+        # Check for problematic columns specifically
+        problematic_cols = ['image_view_ratio', 'cart_abandon_flag']
+        for col_name in problematic_cols:
+            if col_name in df.columns:
+                col_type = dict(df.dtypes)[col_name]
+                logger.info(f"  {col_name} data type: {col_type}")
+                
+                # Show distinct values for this column
+                distinct_vals = df.select(col_name).distinct().limit(5).collect()
+                logger.info(f"  {col_name} sample values: {[row[col_name] for row in distinct_vals]}")
+        
+        logger.info(f"=== END DEBUGGING {df_name} ===")
+
+    def debug_sql_query_result(self, query, query_name):
+        """Debug function to test SQL query and show results"""
+        logger.info(f"=== DEBUGGING SQL QUERY: {query_name} ===")
+        try:
+            result_df = self.spark.sql(query)
+            self.debug_dataframe_schema(result_df, f"{query_name}_RESULT")
+            return result_df
+        except Exception as e:
+            logger.error(f"Error executing query {query_name}: {str(e)}")
+            logger.error(f"Query: {query}")
+            raise
+
     def generate_ml_features(self, as_of_date: str):
         """Main method to generate ML features"""
         try:
-            # Create schemas
-            self.create_feature_schemas()
+            # Create schemas - but use the existing gold directory structure
+            logger.info("Creating/ensuring gold database and table schema...")
+            
+            # Verify existing data in the target table
+            try:
+                existing_count = self.spark.sql("SELECT COUNT(*) as count FROM gold.customer_product_interactions").collect()[0]['count']
+                logger.info(f"Found {existing_count} existing records in gold.customer_product_interactions")
+                
+                # Check table structure and status
+                logger.info("Current structure of gold.customer_product_interactions:")
+                self.spark.sql("DESCRIBE TABLE gold.customer_product_interactions").show(truncate=False)
+                
+                # Check if partitions exist
+                logger.info("Current partitions in gold.customer_product_interactions:")
+                self.spark.sql("SHOW PARTITIONS gold.customer_product_interactions").show(truncate=False)
+            except Exception as e:
+                logger.warning(f"Could not check existing data: {str(e)} - this is expected if the table doesn't exist yet")
             
             # Generate features
             features_df = self.generate_comprehensive_features(as_of_date)
@@ -481,14 +661,92 @@ class MLFeatureEngineering:
                 logger.warning("No features generated - check input data")
                 return
             
-            # Write to Gold layer
-            features_df.write \
+            # Write to Gold layer using Iceberg format to maintain consistency
+            logger.info("Writing ML features to gold layer...")
+            
+            # Create the table schema first if it doesn't exist
+            self.create_feature_schemas()
+            
+            # Debug the schema of the features dataframe
+            logger.info("Schema of features dataframe before writing:")
+            features_df.printSchema()
+            
+            # Show partition columns for features_df
+            logger.info("Partition columns for features_df:")
+            logger.info(f"Columns available for partitioning: {features_df.columns}")
+            
+            # Write directly to the Iceberg table - FIXED: Removed partitionBy since table is already partitioned
+            logger.info(f"Writing {feature_count} features to gold.customer_product_interactions...")
+            
+            # Show a sample of data before writing
+            logger.info("Sample data to be written:")
+            features_df.limit(3).show(truncate=False)
+            
+            # Select only the columns that match the table schema to avoid mismatches
+            logger.info("Selecting columns to match table schema...")
+            selected_features_df = features_df.select(
+                "customer_id", 
+                "product_id",
+                "view_count_7d", 
+                "view_count_30d", 
+                "view_count_90d",
+                "purchase_count_7d", 
+                "purchase_count_30d",
+                "cart_add_count_7d", 
+                "cart_add_count_30d",
+                "avg_time_spent_seconds",
+                "cart_abandon_flag",
+                "last_interaction_days_ago",
+                "category_purchase_count",
+                "category_affinity_score",
+                "customer_tenure_days",
+                "customer_total_purchases",
+                "customer_avg_order_value",
+                "product_popularity_score",
+                "product_avg_rating",
+                "product_price_rank_in_category",
+                "purchased_next_7d",
+                "purchased_next_30d",
+                "feature_date",
+                "created_time"
+            )
+            
+            # Double-check the schema after selection
+            logger.info("Schema after column selection (should match table schema):")
+            selected_features_df.printSchema()
+            
+            # Write directly to the Iceberg table - FIXED: Removed partitionBy since table is already partitioned
+            logger.info(f"Writing {feature_count} features to gold.customer_product_interactions...")
+            
+            selected_features_df.write \
                 .mode("overwrite") \
-                .option("replaceWhere", f"feature_date = '{as_of_date}'") \
                 .insertInto("gold.customer_product_interactions")
             
             logger.info(f"Successfully wrote {feature_count} ML features to gold.customer_product_interactions")
             
+            # Verify data was written correctly
+            try:
+                after_count = self.spark.sql("SELECT COUNT(*) as count FROM gold.customer_product_interactions").collect()[0]['count']
+                logger.info(f"After writing: {after_count} records in gold.customer_product_interactions")
+                
+                # Count records for this specific feature_date
+                today_count = self.spark.sql(f"SELECT COUNT(*) as count FROM gold.customer_product_interactions WHERE feature_date = '{as_of_date}'").collect()[0]['count']
+                logger.info(f"Records for feature_date={as_of_date}: {today_count}")
+                
+                # Check if the new partition exists
+                logger.info("Updated partitions in gold.customer_product_interactions:")
+                self.spark.sql("SHOW PARTITIONS gold.customer_product_interactions").show(truncate=False)
+                
+                # Sample data from the table
+                logger.info("Sample data from gold.customer_product_interactions:")
+                self.spark.sql(f"""
+                    SELECT * FROM gold.customer_product_interactions 
+                    WHERE feature_date = '{as_of_date}'
+                    LIMIT 5
+                """).show(truncate=False)
+            except Exception as e:
+                logger.error(f"Error verifying written data: {str(e)}")
+                
             # Sample of generated features for verification
             logger.info("Sample of generated features:")
             features_df.select(

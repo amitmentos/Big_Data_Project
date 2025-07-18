@@ -333,9 +333,40 @@ class SCDType2Processor:
         logger.info(f"Processing Marketing Campaigns for date: {process_date}")
         
         try:
-            # Read campaign data from bronze layer
+            # Debug: Check the bronze table structure and count
+            bronze_count = self.spark.sql("SELECT COUNT(*) as count FROM bronze.raw_marketing_campaigns").collect()[0]['count']
+            logger.info(f"Total records in bronze.raw_marketing_campaigns: {bronze_count}")
+            
+            # Debug: Show some sample data from bronze
+            logger.info("Sample data from bronze.raw_marketing_campaigns:")
+            self.spark.sql("SELECT * FROM bronze.raw_marketing_campaigns LIMIT 5").show(truncate=False)
+            
+            # Debug: Show distinct campaign IDs
+            distinct_campaigns = self.spark.sql("""
+                SELECT campaign_id, COUNT(*) as count 
+                FROM bronze.raw_marketing_campaigns 
+                GROUP BY campaign_id 
+                ORDER BY count DESC
+            """).collect()
+            logger.info(f"Distinct campaign IDs in bronze: {[(row['campaign_id'], row['count']) for row in distinct_campaigns]}")
+            
+            # Read campaign data from bronze layer - process all campaigns
+            # Using ROW_NUMBER to get the latest version of each campaign
             new_campaigns = self.spark.sql(f"""
-                SELECT DISTINCT
+                WITH campaign_data AS (
+                    SELECT 
+                        campaign_id,
+                        campaign_name,
+                        campaign_type,
+                        start_date,
+                        end_date,
+                        budget,
+                        target_audience,
+                        ROW_NUMBER() OVER (PARTITION BY campaign_id ORDER BY ingestion_time DESC) as rn
+                    FROM bronze.raw_marketing_campaigns
+                    WHERE campaign_id IS NOT NULL
+                )
+                SELECT
                     campaign_id,
                     campaign_name,
                     campaign_type,
@@ -343,10 +374,13 @@ class SCDType2Processor:
                     end_date,
                     budget,
                     target_audience
-                FROM bronze.raw_marketing_campaigns
-                WHERE DATE(ingestion_time) = '{process_date}'
-                  AND campaign_id IS NOT NULL
+                FROM campaign_data
+                WHERE rn = 1
             """)
+            
+            # Debug: Show what the SQL query returned
+            logger.info(f"Records from new_campaigns query: {new_campaigns.count()}")
+            new_campaigns.show(10, truncate=False)
             
             if new_campaigns.count() == 0:
                 logger.warning(f"No campaign updates found for date: {process_date}")
@@ -356,30 +390,57 @@ class SCDType2Processor:
             try:
                 existing_campaigns = self.spark.sql("SELECT campaign_id FROM silver.dim_marketing_campaign")
                 existing_ids = [row['campaign_id'] for row in existing_campaigns.collect()]
-            except:
+                logger.info(f"Existing campaign IDs in silver: {existing_ids}")
+                
+                # Additional debug: Show full data from silver
+                logger.info("Current data in silver.dim_marketing_campaign:")
+                self.spark.sql("SELECT * FROM silver.dim_marketing_campaign").show(truncate=False)
+                
+            except Exception as e:
+                logger.info(f"No existing campaigns found in silver layer: {str(e)}")
                 existing_ids = []
             
-            # Filter for truly new campaigns
-            if existing_ids:
-                new_campaigns = new_campaigns.filter(~col("campaign_id").isin(existing_ids))
+            # IMPORTANT CHANGE: Instead of filtering out existing campaigns, we'll use a merge strategy
+            # to update existing campaigns and insert new ones
             
+            # Debug what would be added/updated
+            new_ids = [row['campaign_id'] for row in new_campaigns.collect()]
+            to_insert = [id for id in new_ids if id not in existing_ids]
+            to_update = [id for id in new_ids if id in existing_ids]
+            
+            logger.info(f"Campaign IDs to insert: {to_insert}")
+            logger.info(f"Campaign IDs that would be updated: {to_update}")
+            
+            # Option 1: For simplicity, overwrite the entire table with the latest data
+            # This ensures all campaigns are in the silver layer with their most recent data
             if new_campaigns.count() > 0:
-                # Add metadata columns
+                # Add metadata columns - use proper PySpark functions
                 campaigns_to_insert = new_campaigns.withColumn("created_time", current_timestamp()) \
                                                   .withColumn("updated_time", current_timestamp())
                 
-                # Write to dimension table
+                # Debug: Show what will be inserted
+                logger.info(f"Campaigns to insert/update ({campaigns_to_insert.count()} records):")
+                campaigns_to_insert.show(10, truncate=False)
+                
+                # Overwrite the entire table to ensure we have the latest data for all campaigns
                 campaigns_to_insert.write \
-                    .mode("append") \
+                    .mode("overwrite") \
                     .insertInto("silver.dim_marketing_campaign")
                 
-                count = campaigns_to_insert.count()
-                logger.info(f"Successfully processed {count} new campaign records")
+                # Debug: Verify after insertion
+                after_count = self.spark.sql("SELECT COUNT(*) as count FROM silver.dim_marketing_campaign").collect()[0]['count']
+                logger.info(f"silver.dim_marketing_campaign record count after insertion: {after_count}")
+                logger.info("Data in silver.dim_marketing_campaign after update:")
+                self.spark.sql("SELECT * FROM silver.dim_marketing_campaign").show(truncate=False)
+                
+                logger.info(f"Successfully processed {campaigns_to_insert.count()} campaign records")
             else:
-                logger.info("No new campaign records to process")
+                logger.info("No campaign records to process")
                 
         except Exception as e:
             logger.error(f"Error processing marketing campaigns: {str(e)}")
+            import traceback
+            logger.error(f"Stack trace: {traceback.format_exc()}")
             raise
 
     def populate_date_dimension(self, start_date: str = "2024-01-01", end_date: str = "2025-12-31"):

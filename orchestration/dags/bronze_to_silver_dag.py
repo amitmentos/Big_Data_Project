@@ -116,6 +116,32 @@ process_customer_scd = SparkSubmitOperator(
     dag=dag
 )
 
+# Process Marketing Campaigns
+process_marketing_campaigns = SparkSubmitOperator(
+    task_id='process_marketing_campaigns',
+    application='/opt/processing/spark-apps/scd_type2_processor.py',
+    conn_id='spark_default',
+    application_args=['--source', 'campaign', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
+# Process Date Dimension
+process_date_dimension = SparkSubmitOperator(
+    task_id='process_date_dimension',
+    application='/opt/processing/spark-apps/scd_type2_processor.py',
+    conn_id='spark_default',
+    application_args=['--source', 'date', '--date', '{{ ds }}'],
+    conf=spark_config,
+    jars='/opt/processing/jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar,/opt/processing/jars/hadoop-aws-3.3.4.jar,/opt/processing/jars/aws-java-sdk-bundle-1.12.470.jar',
+    verbose=True,
+    
+    dag=dag
+)
+
 # Transform Product Catalog
 transform_product_catalog = SparkSubmitOperator(
     task_id='transform_product_catalog',
@@ -156,6 +182,6 @@ silver_quality_check = SparkSubmitOperator(
 )
 
 # Define task dependencies
-bronze_quality_check >> [transform_user_events, transform_sales_data, process_customer_scd, transform_product_catalog]
-[transform_user_events, transform_sales_data, process_customer_scd, transform_product_catalog] >> handle_late_arrivals
+bronze_quality_check >> [transform_user_events, transform_sales_data, process_customer_scd, process_marketing_campaigns, process_date_dimension, transform_product_catalog]
+[transform_user_events, transform_sales_data, process_customer_scd, process_marketing_campaigns, process_date_dimension, transform_product_catalog] >> handle_late_arrivals
 handle_late_arrivals >> silver_quality_check

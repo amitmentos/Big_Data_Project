@@ -5,32 +5,32 @@
 
 set -e
 
-echo "🚀 E-COMMERCE BIG DATA PLATFORM - COMPLETE DEMO STARTUP"
+echo "E-COMMERCE BIG DATA PLATFORM - COMPLETE DEMO STARTUP"
 echo "=========================================================="
-echo "🔄 Running complete platform flow + Great Expectations validation"
+echo "Running complete platform flow + Great Expectations validation"
 
 # Function to check if Docker is running
 check_docker() {
     if ! docker info > /dev/null 2>&1; then
-        echo "❌ Docker is not running. Please start Docker first."
+        echo "Docker is not running. Please start Docker first."
         exit 1
     fi
-    echo "✅ Docker is running"
+    echo "Docker is running"
 }
 
 # Function to check if docker-compose is available
 check_docker_compose() {
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        echo "❌ Docker Compose is not available. Please install Docker Compose."
+        echo "Docker Compose is not available. Please install Docker Compose."
         exit 1
     fi
-    echo "✅ Docker Compose is available"
+    echo "Docker Compose is available"
 }
 
 # Function to start services
 start_services() {
     echo ""
-    echo "🔧 Starting all platform services..."
+    echo "Starting all platform services..."
     echo "This may take a few minutes for first-time setup..."
     
     # Use docker compose (newer syntax) or docker-compose (older syntax)
@@ -43,13 +43,13 @@ start_services() {
     # Build and start all services
     $DOCKER_COMPOSE up -d --build
     
-    echo "✅ All services starting in background..."
+    echo "All services starting in background..."
 }
 
 # Function to show service status
 show_services() {
     echo ""
-    echo "📋 Service Status:"
+    echo "Service Status:"
     if docker compose version &> /dev/null; then
         docker compose ps
     else
@@ -60,7 +60,7 @@ show_services() {
 # Function to ensure Kafka is properly started
 ensure_kafka_running() {
     echo ""
-    echo "🔍 Ensuring Kafka is properly started..."
+    echo "Ensuring Kafka is properly started..."
     
     # Determine docker compose command
     if docker compose version &> /dev/null; then
@@ -71,7 +71,7 @@ ensure_kafka_running() {
     
     # Check if Kafka container is running
     if ! docker ps | grep -q "ecommerce-kafka"; then
-        echo "⚠️  Kafka container not running properly. Attempting to fix..."
+        echo "Kafka container not running properly. Attempting to fix..."
         
         # Make sure Zookeeper is running
         if ! docker ps | grep -q "ecommerce-zookeeper"; then
@@ -91,17 +91,17 @@ ensure_kafka_running() {
         
         # Verify Kafka is running
         if docker ps | grep -q "ecommerce-kafka"; then
-            echo "✅ Kafka container started successfully!"
+            echo "Kafka container started successfully!"
         else
-            echo "❌ Failed to start Kafka container."
+            echo "Failed to start Kafka container."
             echo "   Attempting one more restart with increased timeout..."
             $DOCKER_COMPOSE up -d kafka
             sleep 45
             
             if docker ps | grep -q "ecommerce-kafka"; then
-                echo "✅ Kafka container started successfully on second attempt!"
+                echo "Kafka container started successfully on second attempt!"
             else
-                echo "❌ Failed to start Kafka container after multiple attempts."
+                echo "Failed to start Kafka container after multiple attempts."
                 echo "   You may need to manually troubleshoot Kafka startup issues."
                 echo "   Continuing with the demo, but streaming features may not work properly."
             fi
@@ -112,15 +112,15 @@ ensure_kafka_running() {
         $DOCKER_COMPOSE up -d kafka-init
         sleep 10
     else
-        echo "✅ Kafka container is already running"
+        echo "Kafka container is already running"
     fi
 }
 
 # Function to generate fresh sample data with current timestamps
 generate_fresh_data() {
     echo ""
-    echo "📊 Generating Fresh Sample Data with Current Timestamps..."
-    echo "🔄 Creating up-to-date data for all bronze layer tables..."
+    echo "Generating Fresh Sample Data with Current Timestamps..."
+    echo "Creating up-to-date data for all bronze layer tables..."
     
     # Create a fresh data generation script that uses current timestamps
     cat > generate_current_data.py << 'EOF'
@@ -142,7 +142,7 @@ def generate_current_timestamp_data():
     now = datetime.now()
     current_date = now.strftime('%Y-%m-%d')
     
-    print(f"🔄 Generating data for date: {current_date}")
+    print(f"Generating data for date: {current_date}")
     
     # Generate fresh customers with current timestamp
     customers = []
@@ -272,9 +272,9 @@ def generate_current_timestamp_data():
         filepath = f"sample_data/{name}.json"
         with open(filepath, 'w') as f:
             json.dump(data, f, indent=2, default=str)
-        print(f"✅ Generated {len(data)} current {name} records -> {filepath}")
+        print(f"Generated {len(data)} current {name} records -> {filepath}")
     
-    print(f"🎉 Fresh data generation completed with timestamp: {now.isoformat()}")
+    print(f"Fresh data generation completed with timestamp: {now.isoformat()}")
     return current_date
 
 if __name__ == "__main__":
@@ -283,17 +283,17 @@ EOF
     
     # Make the script executable and run it
     chmod +x generate_current_data.py
-    CURRENT_DATE=$(python3 generate_current_data.py | grep "🔄 Generating data for date:" | awk '{print $NF}')
+    CURRENT_DATE=$(python3 generate_current_data.py | grep "Generating data for date:" | awk '{print $NF}')
     
-    echo "📅 Current date for data generation: $CURRENT_DATE"
+    echo "Current date for data generation: $CURRENT_DATE"
     return 0
 }
 
 # Function to start Kafka delay data flow demonstration
 start_kafka_delay_demo() {
     echo ""
-    echo "🚀 Starting Kafka Delay Data Flow Demonstration..."
-    echo "⏳ This will showcase real-time streaming with delayed data arrivals..."
+    echo "Starting Kafka Delay Data Flow Demonstration..."
+    echo "This will showcase real-time streaming with delayed data arrivals..."
     
     # Determine docker compose command
     if docker compose version &> /dev/null; then
@@ -302,15 +302,15 @@ start_kafka_delay_demo() {
         DOCKER_COMPOSE="docker-compose"
     fi
     
-    echo "📡 Step 1: Starting immediate data producers..."
+    echo "Step 1: Starting immediate data producers..."
     
     # Start user activity producer with high rate for immediate demo
-    echo "   🔄 Starting user activity producer (immediate events)..."
+    echo "   Starting user activity producer (immediate events)..."
     $DOCKER_COMPOSE exec -d kafka-producers python user_activity_producer.py &
     ACTIVITY_PID=$!
     
     # Start marketplace sales producer with mixed delay patterns
-    echo "   🔄 Starting marketplace sales producer (with delay patterns)..."
+    echo "   Starting marketplace sales producer (with delay patterns)..."
     $DOCKER_COMPOSE exec -d kafka-producers bash -c "
         export SALES_PER_HOUR=200
         export DELAY_DEMO_MODE=true
@@ -318,28 +318,28 @@ start_kafka_delay_demo() {
     " &
     SALES_PID=$!
     
-    echo "   ✅ Immediate data producers started"
+    echo "   Immediate data producers started"
     
-    echo "📡 Step 2: Starting streaming consumers and monitoring..."
+    echo "Step 2: Starting streaming consumers and monitoring..."
     
     # Start streaming consumer to process data
-    echo "   🔄 Starting streaming data consumer..."
+    echo "   Starting streaming data consumer..."
     $DOCKER_COMPOSE exec -d spark-master python /opt/streaming/consumers/streaming_consumer.py &
     CONSUMER_PID=$!
     
     # Start Kafka delay monitor
-    echo "   🔄 Starting Kafka delay monitor..."
+    echo "   Starting Kafka delay monitor..."
     $DOCKER_COMPOSE exec -d spark-master python /opt/streaming/kafka_delay_monitor.py &
     MONITOR_PID=$!
     
-    echo "   ✅ Streaming consumer and delay monitor started"
+    echo "   Streaming consumer and delay monitor started"
     
-    echo "📡 Step 3: Demonstrating delay data flow patterns..."
+    echo "Step 3: Demonstrating delay data flow patterns..."
     
     # Show real-time Kafka activity
-    echo "   📊 Monitoring Kafka topics for 60 seconds..."
+    echo "   Monitoring Kafka topics for 60 seconds..."
     for i in {1..12}; do
-        echo "   ⏰ Monitoring cycle $i/12 - Checking topics..."
+        echo "   Monitoring cycle $i/12 - Checking topics..."
         
         # Check user activity events
         USER_COUNT=$($DOCKER_COMPOSE exec -T kafka kafka-run-class kafka.tools.GetOffsetShell \
@@ -351,42 +351,42 @@ start_kafka_delay_demo() {
             --broker-list localhost:9092 --topic marketplace_sales --time -1 2>/dev/null | \
             awk -F: '{sum+=$3} END {print sum}' || echo "0")
         
-        echo "      📈 User Activity Events: $USER_COUNT total messages"
-        echo "      📈 Marketplace Sales: $SALES_COUNT total messages"
+        echo "      User Activity Events: $USER_COUNT total messages"
+        echo "      Marketplace Sales: $SALES_COUNT total messages"
         
         if [ $i -eq 6 ]; then
             echo ""
-            echo "   ⚡ Triggering LATE ARRIVAL BATCH at midpoint..."
+            echo "   Triggering LATE ARRIVAL BATCH at midpoint..."
             $DOCKER_COMPOSE exec -d kafka-producers bash -c "
                 export LATE_ARRIVAL_BATCH=true
                 export BATCH_SIZE=50
                 python marketplace_sales_producer.py --late-batch
             " &
-            echo "   📦 Late arrival batch (50 delayed records) triggered!"
+            echo "   Late arrival batch (50 delayed records) triggered!"
             echo ""
         fi
         
         sleep 5
     done
     
-    echo "📡 Step 4: Demonstrating late arrival handling..."
+    echo "Step 4: Demonstrating late arrival handling..."
     
     # Run late arrival handler
-    echo "   🔄 Processing late arrivals with 48-hour lookback..."
+    echo "   Processing late arrivals with 48-hour lookback..."
     $DOCKER_COMPOSE exec spark-master python /opt/streaming/consumers/late_arrival_handler.py \
         --lookback-hours 48 --process-date $(date +%Y-%m-%d) &
     LATE_HANDLER_PID=$!
     
-    echo "   ✅ Late arrival handler started"
+    echo "   Late arrival handler started"
     
     echo ""
-    echo "🎯 Kafka Delay Data Flow Demonstration Summary:"
-    echo "   ✅ Real-time user activity streaming active"
-    echo "   ✅ Marketplace sales with delay patterns active" 
-    echo "   ✅ Late arrival batch processing demonstrated"
-    echo "   ✅ Late arrival handler processing enabled"
+    echo "Kafka Delay Data Flow Demonstration Summary:"
+    echo "   Real-time user activity streaming active"
+    echo "   Marketplace sales with delay patterns active" 
+    echo "   Late arrival batch processing demonstrated"
+    echo "   Late arrival handler processing enabled"
     echo ""
-    echo "📊 The system is now demonstrating:"
+    echo "The system is now demonstrating:"
     echo "   • Immediate data ingestion (user activities)"
     echo "   • Delayed data arrival patterns (marketplace sales)"
     echo "   • Late arrival detection and reprocessing"
@@ -399,21 +399,21 @@ start_kafka_delay_demo() {
 # Function to run the complete demo with current date
 run_complete_demo() {
     echo ""
-    echo "🎯 Starting Complete Platform Flow Demonstration..."
-    echo "⏳ Please wait while services initialize..."
+    echo "Starting Complete Platform Flow Demonstration..."
+    echo "Please wait while services initialize..."
     
     # Generate fresh data first
     generate_fresh_data
     
     # Get current date for processing
     CURRENT_DATE=$(date +%Y-%m-%d)
-    echo "📅 Processing date: $CURRENT_DATE"
+    echo "Processing date: $CURRENT_DATE"
     
     # Start Kafka delay data flow demonstration
     start_kafka_delay_demo
     
     echo ""
-    echo "⏳ Allowing streaming data to accumulate (60 seconds)..."
+    echo "Allowing streaming data to accumulate (60 seconds)..."
     sleep 60
     
     # Make sure the Python script is executable
@@ -426,9 +426,9 @@ run_complete_demo() {
 # Function to run Great Expectations validation after complete demo
 run_great_expectations_after_demo() {
     echo ""
-    echo "📊 RUNNING GREAT EXPECTATIONS DATA QUALITY VALIDATION"
+    echo "RUNNING GREAT EXPECTATIONS DATA QUALITY VALIDATION"
     echo "====================================================="
-    echo "🔍 Validating all processed data with Great Expectations..."
+    echo "Validating all processed data with Great Expectations..."
     
     # Make sure the Python script is executable
     chmod +x run_great_expectations_demo.py
@@ -437,21 +437,21 @@ run_great_expectations_after_demo() {
     python3 run_great_expectations_demo.py
     
     echo ""
-    echo "✅ Great Expectations validation completed!"
+    echo "Great Expectations validation completed!"
 }
 
 # Main execution flow
 main() {
-    echo "🔍 Pre-flight checks..."
+    echo "Pre-flight checks..."
     check_docker
     check_docker_compose
     
     echo ""
-    echo "🚀 Starting platform services..."
+    echo "Starting platform services..."
     start_services
     
     echo ""
-    echo "⏳ Giving services time to initialize (30 seconds)..."
+    echo "Giving services time to initialize (30 seconds)..."
     echo "    (Initial time for services to start...)"
     sleep 30
     
@@ -462,7 +462,7 @@ main() {
     show_services
     
     echo ""
-    echo "🎬 Platform ready! Running complete demo flow..."
+    echo "Platform ready! Running complete demo flow..."
     
     # Run complete platform demo first
     run_complete_demo
@@ -471,40 +471,40 @@ main() {
     run_great_expectations_after_demo
     
     echo ""
-    echo "🎉 COMPLETE DEMO FLOW FINISHED!"
+    echo "COMPLETE DEMO FLOW FINISHED!"
     echo "================================"
-    echo "✅ Platform demo completed successfully"
-    echo "✅ Great Expectations validation completed"
+    echo "Platform demo completed successfully"
+    echo "Great Expectations validation completed"
     echo ""
-    echo "🔗 Access points:"
+    echo "Access points:"
     echo "   • Airflow UI: http://localhost:8081 (admin/admin)"
     echo "   • Spark UI: http://localhost:8080"
     echo "   • MinIO Console: http://localhost:9001 (minio/minio123)"
     echo ""
-    echo "💡 To run demos again manually:"
+    echo "To run demos again manually:"
     echo "   • Complete Demo: python3 run_complete_demo.py"
     echo "   • Great Expectations: python3 run_great_expectations_demo.py"
     echo ""
-    echo "🔄 Platform is now running continuously..."
+    echo "Platform is now running continuously..."
     echo "   Press Ctrl+C to stop all services"
     
     # Keep the platform running
     while true; do
         sleep 30
-        echo "⏰ $(date '+%H:%M:%S') - Platform operational, all services running..."
+        echo "$(date '+%H:%M:%S') - Platform operational, all services running..."
     done
 }
 
 # Cleanup function
 cleanup() {
     echo ""
-    echo "🛑 Shutting down services..."
+    echo "Shutting down services..."
     if docker compose version &> /dev/null; then
         docker compose down
     else
         docker-compose down
     fi
-    echo "✅ Services stopped"
+    echo "Services stopped"
 }
 
 # Set up signal handlers
@@ -514,13 +514,13 @@ trap cleanup EXIT
 main
 
 echo ""
-echo "🎉 Demo completed! Services are still running."
-echo "🔗 Access points:"
+echo "Demo completed! Services are still running."
+echo "Access points:"
 echo "   • Airflow UI: http://localhost:8081 (admin/admin)"
 echo "   • Spark UI: http://localhost:8080"
 echo "   • MinIO Console: http://localhost:9001 (minio/minio123)"
 echo ""
-echo "💡 To stop all services, run: docker compose down"
-echo "📚 To run individual demos:"
+echo "To stop all services, run: docker compose down"
+echo "To run individual demos:"
 echo "   • Complete Demo: python3 run_complete_demo.py"
 echo "   • Great Expectations: python3 run_great_expectations_demo.py"
