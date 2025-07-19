@@ -36,7 +36,6 @@ Data Sources → Kafka → Bronze Layer → Silver Layer → Gold Layer → Anal
 ```
 ecommerce-data-platform/
 ├── README.md                          # This file
-├── PROJECT_SUMMARY.md                 # Project overview and architecture
 ├── KAFKA_DELAY_IMPLEMENTATION.md      # Kafka delay monitoring details
 ├── GREAT_EXPECTATIONS_INTEGRATION.md  # Data quality framework details
 ├── docker-compose.yml                 # Main orchestration
